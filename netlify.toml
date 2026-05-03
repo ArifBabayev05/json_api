@@ -1,5 +1,6 @@
 [build]
   functions = "netlify/functions"
+  command = "git lfs install && git lfs pull"
 
 [functions]
   included_files = ["data/**"]
