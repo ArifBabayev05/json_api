@@ -1,2 +1,5 @@
 node_modules/
 .netlify/
+scraped_data.json
+scraped_data_ru.json
+scraped_data_tr.json

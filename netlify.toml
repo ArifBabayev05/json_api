@@ -3,3 +3,14 @@
 
 [functions]
   included_files = ["data/**"]
+  node_bundler = "zisi"
+
+[[redirects]]
+  from = "/.netlify/functions/cars/*"
+  to = "/.netlify/functions/cars/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/cars/:splat"
+  status = 200
