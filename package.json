@@ -1,11 +1,10 @@
 {
   "name": "scorpus-api",
-  "version": "1.0.0",
-  "description": "Auto data REST API",
+  "version": "2.0.0",
+  "description": "Multi-language auto specifications REST API — 117K+ records in EN/TR/RU",
+  "private": true,
   "scripts": {
-    "dev": "netlify dev"
-  },
-  "devDependencies": {
-    "netlify-cli": "^17.0.0"
+    "optimize": "node scripts/optimize-data.js",
+    "test": "node scripts/test-api.js"
   }
 }
