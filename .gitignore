@@ -1,7 +1,11 @@
 node_modules/
 .netlify/
 .vercel/
+.env
+.env.*
+!.env.example
 scraped_data.json
 scraped_data_ru.json
 scraped_data_tr.json
-package-lock.json
+worker/data.sql
+worker/db_out*.txt

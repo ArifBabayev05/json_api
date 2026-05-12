@@ -1,0 +1,9 @@
+name = "scorpus-api"
+main = "src/index.js"
+compatibility_date = "2024-05-03"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "scorpus_db"
+database_id = "701a4cbc-7790-4b73-b80b-293662a266bc"
+migrations_dir = "migrations"

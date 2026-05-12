@@ -1,0 +1,592 @@
+openapi: 3.0.3
+info:
+  title: Scorpus Auto-Data API
+  version: 1.0.0
+  description: Cloudflare Workers origin for the Scorpus car dataset. The response shape stays compatible with the existing frontend.
+servers:
+  - url: https://scorpus-api.babayevv-arif05.workers.dev
+    description: Primary Cloudflare Worker origin
+tags:
+  - name: Cars
+    description: Query and filter car specifications
+  - name: Metadata
+    description: Lookup endpoints for brands, models, languages, and stats
+
+paths:
+  /:
+    get:
+      tags: [Cars]
+      summary: List car specifications
+      description: Returns a paginated list of car records with flexible filters and sorting.
+      parameters:
+        - $ref: '#/components/parameters/Lang'
+        - $ref: '#/components/parameters/Brand'
+        - $ref: '#/components/parameters/Model'
+        - $ref: '#/components/parameters/Generation'
+        - $ref: '#/components/parameters/Modification'
+        - $ref: '#/components/parameters/BodyType'
+        - $ref: '#/components/parameters/FuelType'
+        - $ref: '#/components/parameters/Aspiration'
+        - $ref: '#/components/parameters/Gearbox'
+        - $ref: '#/components/parameters/Drive'
+        - $ref: '#/components/parameters/EngineCode'
+        - $ref: '#/components/parameters/Seats'
+        - $ref: '#/components/parameters/Doors'
+        - $ref: '#/components/parameters/Cylinders'
+        - $ref: '#/components/parameters/YearFrom'
+        - $ref: '#/components/parameters/YearTo'
+        - $ref: '#/components/parameters/MinPowerHp'
+        - $ref: '#/components/parameters/MaxPowerHp'
+        - $ref: '#/components/parameters/MinTorqueNm'
+        - $ref: '#/components/parameters/MaxTorqueNm'
+        - $ref: '#/components/parameters/MinDisplacement'
+        - $ref: '#/components/parameters/MaxDisplacement'
+        - $ref: '#/components/parameters/MinMaxSpeed'
+        - $ref: '#/components/parameters/MaxMaxSpeed'
+        - $ref: '#/components/parameters/MinAccel100'
+        - $ref: '#/components/parameters/MaxAccel100'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortDir'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Grouped'
+        - $ref: '#/components/parameters/GroupedByModel'
+      responses:
+        '200':
+          description: Paginated results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarsListResponse'
+              examples:
+                sample:
+                  value:
+                    success: true
+                    count: 1
+                    page: 1
+                    results:
+                      - _id: 24082
+                        brand: Mercedes-Benz
+                        model: C-class
+                        generation: C-class T-model (S202, facelift 1997)
+                        modification: C 200 CDI (102 Hp)
+                        body_type: Sedan
+                        year_start: 1998
+                        year_end: 2001
+                        power_hp: 102
+                        torque_nm: 235
+                        acceleration_100: 13.6
+                        max_speed: 182
+                        lang: en
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /brands:
+    get:
+      tags: [Metadata]
+      summary: List brands
+      parameters:
+        - $ref: '#/components/parameters/Lang'
+      responses:
+        '200':
+          description: Brand list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrandsResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /models:
+    get:
+      tags: [Metadata]
+      summary: List models for a brand
+      parameters:
+        - $ref: '#/components/parameters/BrandRequired'
+        - $ref: '#/components/parameters/Lang'
+      responses:
+        '200':
+          description: Model list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelsResponse'
+        '400':
+          description: Missing brand
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /languages:
+    get:
+      tags: [Metadata]
+      summary: Supported languages
+      responses:
+        '200':
+          description: Language list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LanguagesResponse'
+
+  /stats:
+    get:
+      tags: [Metadata]
+      summary: Dataset statistics
+      responses:
+        '200':
+          description: Record counts per language
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /health:
+    get:
+      tags: [Metadata]
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ping:
+    get:
+      tags: [Metadata]
+      summary: RapidAPI health check alias
+      description: Identical to /health and safe to use as RapidAPI's scheduled health check URL.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  parameters:
+    Lang:
+      name: lang
+      in: query
+      required: false
+      description: Language code. Defaults to English.
+      schema:
+        type: string
+        default: en
+        enum: [en, tr, ru]
+      example: en
+    BrandRequired:
+      name: brand
+      in: query
+      required: true
+      description: Brand name used to list models.
+      schema:
+        type: string
+      example: Hyundai
+    Brand:
+      name: brand
+      in: query
+      required: false
+      description: Partial brand match.
+      schema:
+        type: string
+      example: Hyundai
+    Model:
+      name: model
+      in: query
+      required: false
+      description: Partial model match.
+      schema:
+        type: string
+      example: Santa Fe
+    Generation:
+      name: generation
+      in: query
+      required: false
+      description: Partial generation match.
+      schema:
+        type: string
+      example: C-class T-model
+    Modification:
+      name: modification
+      in: query
+      required: false
+      description: Partial modification match.
+      schema:
+        type: string
+      example: C 200 CDI
+    BodyType:
+      name: body_type
+      in: query
+      required: false
+      schema:
+        type: string
+      example: SUV
+    FuelType:
+      name: fuel_type
+      in: query
+      required: false
+      schema:
+        type: string
+      example: Petrol
+    Aspiration:
+      name: aspiration
+      in: query
+      required: false
+      schema:
+        type: string
+      example: Turbo
+    Gearbox:
+      name: gearbox
+      in: query
+      required: false
+      schema:
+        type: string
+      example: manual
+    Drive:
+      name: drive
+      in: query
+      required: false
+      schema:
+        type: string
+      example: Front
+    EngineCode:
+      name: engine_code
+      in: query
+      required: false
+      schema:
+        type: string
+      example: OM 611 DE 22 LA
+    Seats:
+      name: seats
+      in: query
+      required: false
+      schema:
+        type: integer
+      example: 5
+    Doors:
+      name: doors
+      in: query
+      required: false
+      schema:
+        type: integer
+      example: 4
+    Cylinders:
+      name: cylinders
+      in: query
+      required: false
+      schema:
+        type: integer
+      example: 4
+    YearFrom:
+      name: year_from
+      in: query
+      required: false
+      schema:
+        type: integer
+      example: 1998
+    YearTo:
+      name: year_to
+      in: query
+      required: false
+      schema:
+        type: integer
+      example: 2001
+    MinPowerHp:
+      name: min_power_hp
+      in: query
+      required: false
+      schema:
+        type: number
+      example: 150
+    MaxPowerHp:
+      name: max_power_hp
+      in: query
+      required: false
+      schema:
+        type: number
+      example: 300
+    MinTorqueNm:
+      name: min_torque_nm
+      in: query
+      required: false
+      schema:
+        type: number
+      example: 200
+    MaxTorqueNm:
+      name: max_torque_nm
+      in: query
+      required: false
+      schema:
+        type: number
+      example: 400
+    MinDisplacement:
+      name: min_displacement
+      in: query
+      required: false
+      schema:
+        type: number
+      example: 1600
+    MaxDisplacement:
+      name: max_displacement
+      in: query
+      required: false
+      schema:
+        type: number
+      example: 2500
+    MinMaxSpeed:
+      name: min_max_speed
+      in: query
+      required: false
+      schema:
+        type: number
+      example: 200
+    MaxMaxSpeed:
+      name: max_max_speed
+      in: query
+      required: false
+      schema:
+        type: number
+      example: 300
+    MinAccel100:
+      name: min_accel_100
+      in: query
+      required: false
+      schema:
+        type: number
+      example: 5
+    MaxAccel100:
+      name: max_accel_100
+      in: query
+      required: false
+      schema:
+        type: number
+      example: 10
+    SortBy:
+      name: sort_by
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [power_hp, torque_nm, displacement_cm3, acceleration, max_speed, weight, year_start, year_end, fuel_combined, co2, length, wheelbase, brand, model]
+      example: power_hp
+    SortDir:
+      name: sort_dir
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: asc
+      example: desc
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+      example: 1
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+      example: 20
+    Grouped:
+      name: grouped
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: ['true', 'false']
+      example: 'true'
+    GroupedByModel:
+      name: grouped_by_model
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: ['true', 'false']
+      example: 'true'
+  schemas:
+    CarRecord:
+      type: object
+      additionalProperties: true
+      properties:
+        _id:
+          type: integer
+          example: 24082
+        brand:
+          type: string
+          example: Mercedes-Benz
+        model:
+          type: string
+          example: C-class
+        generation:
+          type: string
+          example: C-class T-model (S202, facelift 1997)
+        modification:
+          type: string
+          example: C 200 CDI (102 Hp)
+        body_type:
+          type: string
+          example: Sedan
+        year_start:
+          type: integer
+          example: 1998
+        year_end:
+          type: integer
+          example: 2001
+        power_hp:
+          type: number
+          example: 102
+        torque_nm:
+          type: number
+          example: 235
+        displacement_cm3:
+          type: number
+          example: 2151
+        acceleration_100:
+          type: number
+          example: 13.6
+        max_speed:
+          type: number
+          example: 182
+        lang:
+          type: string
+          example: en
+    CarsListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        count:
+          type: integer
+          example: 20
+        page:
+          type: integer
+          example: 1
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarRecord'
+    BrandsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        brands:
+          type: array
+          items:
+            type: string
+          example: [Hyundai, Mercedes-Benz, BMW]
+    ModelsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        models:
+          type: array
+          items:
+            type: string
+          example: [Santa Fe, Tucson, Elantra]
+    LanguagesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        languages:
+          type: array
+          items:
+            type: string
+          example: [en, tr, ru]
+    StatsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        stats:
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            en: 41384
+            tr: 41449
+            ru: 34641
+        total:
+          type: integer
+          example: 117474
+    HealthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          example: scorpus-api
+        provider:
+          type: string
+          example: cloudflare-worker
+        database:
+          type: string
+          example: connected
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Brand parameter is required
