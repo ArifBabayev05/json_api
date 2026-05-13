@@ -84,6 +84,70 @@ Example response:
 }
 ```
 
+### Get One Car Specification
+
+```http
+GET /cars/:id?lang=en
+```
+
+Returns a single car record by API id.
+
+### Related Variants
+
+```http
+GET /cars/:id/related?lang=en&limit=7
+```
+
+Returns nearby variants for the same brand and model. Useful for detail-page version navigation.
+
+### Model Years
+
+```http
+GET /models/:brand/:model/years?lang=en
+```
+
+Returns year cards for a selected model, including image, count, and primary variant.
+
+### Model Variants
+
+```http
+GET /models/:brand/:model/variants?lang=en&year=2020
+```
+
+Returns all variants for a selected model, optionally filtered by year.
+
+### Simple Register and Login
+
+```http
+POST /auth/register
+POST /auth/login
+```
+
+Creates or logs in a `driver` or `master` account with mobile number and password. This is intentionally simple for the MVP and does not add session or token handling.
+
+Master registration can include multiple specialties:
+
+```json
+{
+  "role": "master",
+  "name": "Elnur Məmmədov",
+  "phone": "+994501234567",
+  "password": "secret123",
+  "specialties": ["engine", "electrical"]
+}
+```
+
+### Masters and Reviews
+
+```http
+GET /masters?sort=rating_desc
+GET /masters/:id
+POST /masters/:id/profile
+POST /masters/:id/reviews
+```
+
+Registered masters appear in `/masters`. Drivers can add one review per master; submitting again updates the same review.
+
 ### List Brands
 
 ```http

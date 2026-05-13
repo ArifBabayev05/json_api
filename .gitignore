@@ -9,3 +9,4 @@ scraped_data_ru.json
 scraped_data_tr.json
 worker/data.sql
 worker/db_out*.txt
+worker/.wrangler/

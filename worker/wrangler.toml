@@ -7,3 +7,9 @@ binding = "DB"
 database_name = "scorpus_db"
 database_id = "701a4cbc-7790-4b73-b80b-293662a266bc"
 migrations_dir = "migrations"
+
+[[d1_databases]]
+binding = "APP_DB"
+database_name = "scorpus_app_db"
+database_id = "4b404768-98b6-40c8-b43b-de6179545069"
+migrations_dir = "migrations"

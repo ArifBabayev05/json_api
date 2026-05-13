@@ -4,17 +4,40 @@ const path = require("path");
 // ── In-memory cache ───────────────────────────────────────
 const cache = {};
 
-function loadData(lang) {
+async function loadData(lang) {
   if (cache[lang]) return cache[lang];
-  const filePath = path.resolve(__dirname, `../../data/cars_${lang}.json`);
-  if (!fs.existsSync(filePath)) return null;
-  try {
-    const raw = fs.readFileSync(filePath, "utf-8");
-    cache[lang] = JSON.parse(raw);
-    return cache[lang];
-  } catch {
-    return null;
+
+  // 1. Try local file (for development)
+  const localPath = path.resolve(__dirname, `../../scraped/scraped_data${lang === "en" ? "" : "_" + lang}.json`);
+  if (fs.existsSync(localPath)) {
+    try {
+      console.log(`📦 Loading ${lang} data from local filesystem...`);
+      const raw = fs.readFileSync(localPath, "utf-8");
+      cache[lang] = JSON.parse(raw);
+      return cache[lang];
+    } catch (e) {
+      console.error(`❌ Error parsing local ${lang} data:`, e.message);
+    }
   }
+
+  // 2. Try R2 (for production)
+  const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
+  if (R2_PUBLIC_URL) {
+    const fileName = `scraped_data${lang === "en" ? "" : "_" + lang}.json`;
+    const url = `${R2_PUBLIC_URL.replace(/\/$/, "")}/${fileName}`;
+    try {
+      console.log(`🌐 Fetching ${lang} data from R2: ${url}...`);
+      const res = await fetch(url);
+      if (res.ok) {
+        cache[lang] = await res.json();
+        return cache[lang];
+      }
+    } catch (e) {
+      console.error(`❌ Error fetching ${lang} data from R2:`, e.message);
+    }
+  }
+
+  return null;
 }
 
 const SUPPORTED_LANGS = ["en", "ru", "tr"];
@@ -41,7 +64,7 @@ exports.handler = async (event) => {
   if (reqPath === "stats") {
     const stats = {};
     for (const l of SUPPORTED_LANGS) {
-      const d = loadData(l);
+      const d = await loadData(l);
       stats[l] = d ? d.length : 0;
     }
     return json(200, {
@@ -53,7 +76,7 @@ exports.handler = async (event) => {
   // ── /cars/brands ────────────────────────────────────────
   if (reqPath === "brands") {
     const lang = normLang(params.lang);
-    const data = loadData(lang);
+    const data = await loadData(lang);
     if (!data) return json(400, { error: `Unsupported language: ${params.lang}. Use: ${SUPPORTED_LANGS.join(", ")}` });
     const brands = new Set();
     for (const car of data) {
@@ -66,7 +89,7 @@ exports.handler = async (event) => {
 
   // ── Main cars endpoint ──────────────────────────────────
   const lang = normLang(params.lang);
-  const data = loadData(lang);
+  const data = await loadData(lang);
   if (!data) {
     return json(400, {
       error: `Unsupported language: ${params.lang}. Supported: ${SUPPORTED_LANGS.join(", ")}`,

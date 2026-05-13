@@ -11,6 +11,10 @@ tags:
     description: Query and filter car specifications
   - name: Metadata
     description: Lookup endpoints for brands, models, languages, and stats
+  - name: Auth
+    description: Simple mobile number login and registration
+  - name: Masters
+    description: Master profiles and reviews
 
 paths:
   /:
@@ -104,6 +108,278 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /cars/{id}:
+    get:
+      tags: [Cars]
+      summary: Get one car specification by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 29355
+        - $ref: '#/components/parameters/Lang'
+      responses:
+        '200':
+          description: Single car result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarDetailResponse'
+        '404':
+          description: Car not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /cars/{id}/related:
+    get:
+      tags: [Cars]
+      summary: Get nearby variants for the same brand and model
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 29355
+        - $ref: '#/components/parameters/Lang'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 7
+            minimum: 1
+            maximum: 21
+      responses:
+        '200':
+          description: Related car variants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelatedCarsResponse'
+
+  /models/{brand}/{model}/years:
+    get:
+      tags: [Cars]
+      summary: List available years for a brand/model pair
+      parameters:
+        - name: brand
+          in: path
+          required: true
+          schema:
+            type: string
+          example: Hyundai
+        - name: model
+          in: path
+          required: true
+          schema:
+            type: string
+          example: Santa Fe
+        - $ref: '#/components/parameters/Lang'
+      responses:
+        '200':
+          description: Year cards with primary variants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelYearsResponse'
+
+  /models/{brand}/{model}/variants:
+    get:
+      tags: [Cars]
+      summary: List variants for a brand/model pair, optionally filtered by year
+      parameters:
+        - name: brand
+          in: path
+          required: true
+          schema:
+            type: string
+          example: Hyundai
+        - name: model
+          in: path
+          required: true
+          schema:
+            type: string
+          example: Santa Fe
+        - $ref: '#/components/parameters/Lang'
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+          example: 2020
+      responses:
+        '200':
+          description: Matching variants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelVariantsResponse'
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a driver or master account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role, name, phone, password]
+              properties:
+                role:
+                  type: string
+                  enum: [driver, master]
+                name:
+                  type: string
+                phone:
+                  type: string
+                password:
+                  type: string
+                specialties:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: Registered user
+        '400':
+          description: Validation error
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login by mobile number and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, password]
+              properties:
+                phone:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Public user profile
+        '401':
+          description: Invalid credentials
+
+  /masters:
+    get:
+      tags: [Masters]
+      summary: List registered masters
+      parameters:
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [rating_desc, rating_asc, reviews_desc, newest]
+      responses:
+        '200':
+          description: Master list
+
+  /masters/{id}:
+    get:
+      tags: [Masters]
+      summary: Get master profile with reviews
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Master profile
+
+  /masters/{id}/profile:
+    post:
+      tags: [Masters]
+      summary: Complete or update master profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, specialties]
+              properties:
+                user_id:
+                  type: integer
+                specialties:
+                  type: array
+                  items:
+                    type: string
+                city:
+                  type: string
+                address:
+                  type: string
+                experience_years:
+                  type: integer
+                bio:
+                  type: string
+      responses:
+        '200':
+          description: Updated master profile
+
+  /masters/{id}/reviews:
+    get:
+      tags: [Masters]
+      summary: List reviews for a master
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Review list
+    post:
+      tags: [Masters]
+      summary: Add or update a driver review for a master
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, rating, comment]
+              properties:
+                user_id:
+                  type: integer
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+      responses:
+        '201':
+          description: Saved review
 
   /models:
     get:
@@ -509,6 +785,87 @@ components:
         page:
           type: integer
           example: 1
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarRecord'
+    CarDetailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        result:
+          $ref: '#/components/schemas/CarRecord'
+    RelatedCarsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        current_id:
+          type: integer
+          example: 29355
+        count:
+          type: integer
+          example: 7
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarRecord'
+    ModelYear:
+      type: object
+      properties:
+        year:
+          type: integer
+          example: 2023
+        count:
+          type: integer
+          example: 4
+        image:
+          type: string
+        primary_variant:
+          type: object
+          nullable: true
+          additionalProperties: true
+    ModelYearsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        brand:
+          type: string
+          example: Hyundai
+        model:
+          type: string
+          example: Santa Fe
+        count:
+          type: integer
+          example: 23
+        years:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelYear'
+    ModelVariantsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        brand:
+          type: string
+          example: Hyundai
+        model:
+          type: string
+          example: Santa Fe
+        year:
+          type: integer
+          nullable: true
+          example: 2020
+        count:
+          type: integer
+          example: 4
         results:
           type: array
           items:
